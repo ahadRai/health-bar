@@ -1,0 +1,10 @@
+.git
+.env
+*.md
+frontend/node_modules
+frontend/build
+.vscode
+.idea
+*.log
+test_imports.go
+test.go

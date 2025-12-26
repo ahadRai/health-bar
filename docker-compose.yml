@@ -1,0 +1,179 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: healthbar-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - healthbar-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: healthbar-auth-service
+    environment:
+      PORT: ${AUTH_SERVICE_PORT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - healthbar-network
+    restart: unless-stopped
+
+  # Patient Service (placeholder for now)
+  patient-service:
+    build:
+      context: .
+      dockerfile: services/patient/Dockerfile
+    container_name: healthbar-patient-service
+    environment:
+      PORT: ${PATIENT_SERVICE_PORT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${PATIENT_SERVICE_PORT}:${PATIENT_SERVICE_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - healthbar-network
+    restart: unless-stopped
+
+  # Doctor Service (placeholder for now)
+  doctor-service:
+    build:
+      context: .
+      dockerfile: services/doctor/Dockerfile
+    container_name: healthbar-doctor-service
+    environment:
+      PORT: ${DOCTOR_SERVICE_PORT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${DOCTOR_SERVICE_PORT}:${DOCTOR_SERVICE_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - healthbar-network
+    restart: unless-stopped
+
+  # Timeline Service (placeholder for now)
+  timeline-service:
+    build:
+      context: .
+      dockerfile: services/timeline/Dockerfile
+    container_name: healthbar-timeline-service
+    environment:
+      PORT: ${TIMELINE_SERVICE_PORT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${TIMELINE_SERVICE_PORT}:${TIMELINE_SERVICE_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - healthbar-network
+    restart: unless-stopped
+
+  # Prescription Service (placeholder for now)
+  prescription-service:
+    build:
+      context: .
+      dockerfile: services/prescription/Dockerfile
+    container_name: healthbar-prescription-service
+    environment:
+      PORT: ${PRESCRIPTION_SERVICE_PORT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${PRESCRIPTION_SERVICE_PORT}:${PRESCRIPTION_SERVICE_PORT}"
+    volumes:
+      - prescription_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - healthbar-network
+    restart: unless-stopped
+
+  # API Gateway (placeholder for now)
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: healthbar-gateway
+    environment:
+      PORT: ${GATEWAY_PORT}
+      AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT}
+      PATIENT_SERVICE_URL: http://patient-service:${PATIENT_SERVICE_PORT}
+      DOCTOR_SERVICE_URL: http://doctor-service:${DOCTOR_SERVICE_PORT}
+      TIMELINE_SERVICE_URL: http://timeline-service:${TIMELINE_SERVICE_PORT}
+      PRESCRIPTION_SERVICE_URL: http://prescription-service:${PRESCRIPTION_SERVICE_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    depends_on:
+      - auth-service
+      - patient-service
+      - doctor-service
+      - timeline-service
+      - prescription-service
+    networks:
+      - healthbar-network
+    restart: unless-stopped
+
+networks:
+  healthbar-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  prescription_uploads:
