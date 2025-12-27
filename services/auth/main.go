@@ -18,7 +18,7 @@ func main() {
 
     // Database connection
     db, err := database.Connect(database.Config{
-        Host:     getEnv("DB_HOST", "localhost"),
+        Host:     getEnv("DB_HOST", "172.17.0.2"),
         Port:     getEnv("DB_PORT", "5432"),
         User:     getEnv("DB_USER", "postgres"),
         Password: getEnv("DB_PASSWORD", "postgres"),

@@ -23,6 +23,6 @@ clean:
 test-auth:
 	@echo "Testing Auth Service..."
 	@sleep 2
-	@curl -s -X POST http://localhost:8001/api/auth/register -H "Content-Type: application/json" -d '{"email":"patient@test.com","password":"password123","role":"patient"}'
+	@curl -s -X POST http://localhost:8001/api/auth/register -H "Content-Type: application/json" -d '{"email":"patient1@test.com","password":"password123","role":"patient"}'
 	@echo ""
-	@curl -s -X POST http://localhost:8001/api/auth/login -H "Content-Type: application/json" -d '{"email":"patient@test.com","password":"password123"}'
+	@curl -s -X POST http://localhost:8001/api/auth/login -H "Content-Type: application/json" -d '{"email":"patient1@test.com","password":"password123"}'
