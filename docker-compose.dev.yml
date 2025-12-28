@@ -64,5 +64,28 @@ services:
     links:
       - postgres
 
+  doctor-service:
+    build:
+      context: .
+      dockerfile: services/doctor/Dockerfile
+    container_name: healthbar-doctor-service
+    network_mode: bridge
+    environment:
+      PORT: 8003
+      DB_HOST: healthbar-postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: healthbar
+      DB_SSLMODE: disable
+      JWT_SECRET: your-secret-key
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres
+
 volumes:
   postgres_data:
