@@ -41,5 +41,28 @@ services:
     links:
       - postgres
 
+  patient-service:
+    build:
+      context: .
+      dockerfile: services/patient/Dockerfile
+    container_name: healthbar-patient-service
+    network_mode: bridge
+    environment:
+      PORT: 8002
+      DB_HOST: healthbar-postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: healthbar
+      DB_SSLMODE: disable
+      JWT_SECRET: your-secret-key
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres
+
 volumes:
   postgres_data:
