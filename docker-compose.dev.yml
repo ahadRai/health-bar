@@ -109,9 +109,34 @@ services:
         condition: service_healthy
     links:
       - postgres
-
+  
+  prescription-service:
+    build:
+      context: .
+      dockerfile: services/prescription/Dockerfile
+    container_name: healthbar-prescription-service
+    network_mode: bridge
+    environment:
+      PORT: 8005
+      DB_HOST: healthbar-postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: healthbar
+      DB_SSLMODE: disable
+      JWT_SECRET: your-secret-key
+      UPLOAD_PATH: /app/uploads
+    ports:
+      - "8005:8005"
+    volumes:
+      - prescription_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres
 
 volumes:
   postgres_data:
-
+  prescription_uploads:
   
