@@ -87,5 +87,31 @@ services:
     links:
       - postgres
 
+  timeline-service:
+    build:
+      context: .
+      dockerfile: services/timeline/Dockerfile
+    container_name: healthbar-timeline-service
+    network_mode: bridge
+    environment:
+      PORT: 8004
+      DB_HOST: healthbar-postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: healthbar
+      DB_SSLMODE: disable
+      JWT_SECRET: your-secret-key
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+      - postgres
+
+
 volumes:
   postgres_data:
+
+  
