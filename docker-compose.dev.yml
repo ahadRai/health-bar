@@ -109,7 +109,7 @@ services:
         condition: service_healthy
     links:
       - postgres
-  
+
   prescription-service:
     build:
       context: .
@@ -136,7 +136,34 @@ services:
     links:
       - postgres
 
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: healthbar-gateway
+    network_mode: bridge
+    environment:
+      PORT: 8000
+      AUTH_SERVICE_URL: http://healthbar-auth-service:8001
+      PATIENT_SERVICE_URL: http://healthbar-patient-service:8002
+      DOCTOR_SERVICE_URL: http://healthbar-doctor-service:8003
+      TIMELINE_SERVICE_URL: http://healthbar-timeline-service:8004
+      PRESCRIPTION_SERVICE_URL: http://healthbar-prescription-service:8005
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - patient-service
+      - doctor-service
+      - timeline-service
+      - prescription-service
+    links:
+      - auth-service:healthbar-auth-service
+      - patient-service:healthbar-patient-service
+      - doctor-service:healthbar-doctor-service
+      - timeline-service:healthbar-timeline-service
+      - prescription-service:healthbar-prescription-service
+
 volumes:
   postgres_data:
   prescription_uploads:
-  
