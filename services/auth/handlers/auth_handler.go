@@ -18,9 +18,8 @@ func NewAuthHandler(repo *repository.AuthRepository) *AuthHandler {
 }
 
 type RegisterRequest struct {
-	Email    string          `json:"email"`
-	Password string          `json:"password"`
-	Role     models.UserRole `json:"role"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type LoginRequest struct {
@@ -46,11 +45,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Role != models.RolePatient && req.Role != models.RoleDoctor {
-		utils.SendError(w, http.StatusBadRequest, "Role must be 'patient' or 'doctor'")
-		return
-	}
-
 	// Hash password
 	passwordHash, err := utils.HashPassword(req.Password)
 	if err != nil {
@@ -59,7 +53,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create user
-	user, err := h.repo.CreateUser(req.Email, passwordHash, req.Role)
+	user, err := h.repo.CreateUser(req.Email, passwordHash)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") || strings.Contains(err.Error(), "unique") {
 			utils.SendError(w, http.StatusConflict, "Email already exists")
@@ -70,7 +64,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate token
-	token, err := utils.GenerateToken(user.ID, user.Email, string(user.Role))
+	token, err := utils.GenerateToken(user.ID, user.Email)
 	if err != nil {
 		utils.SendError(w, http.StatusInternalServerError, "Failed to generate token")
 		return
@@ -103,7 +97,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate token
-	token, err := utils.GenerateToken(user.ID, user.Email, string(user.Role))
+	token, err := utils.GenerateToken(user.ID, user.Email)
 	if err != nil {
 		utils.SendError(w, http.StatusInternalServerError, "Failed to generate token")
 		return

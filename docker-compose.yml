@@ -70,30 +70,6 @@ services:
       - healthbar-network
     restart: unless-stopped
 
-  # Doctor Service (placeholder for now)
-  doctor-service:
-    build:
-      context: .
-      dockerfile: services/doctor/Dockerfile
-    container_name: healthbar-doctor-service
-    environment:
-      PORT: ${DOCTOR_SERVICE_PORT}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_SSLMODE: ${DB_SSLMODE}
-      JWT_SECRET: ${JWT_SECRET}
-    ports:
-      - "${DOCTOR_SERVICE_PORT}:${DOCTOR_SERVICE_PORT}"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - healthbar-network
-    restart: unless-stopped
-
   # Timeline Service (placeholder for now)
   timeline-service:
     build:
@@ -154,7 +130,6 @@ services:
       PORT: ${GATEWAY_PORT}
       AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_PORT}
       PATIENT_SERVICE_URL: http://patient-service:${PATIENT_SERVICE_PORT}
-      DOCTOR_SERVICE_URL: http://doctor-service:${DOCTOR_SERVICE_PORT}
       TIMELINE_SERVICE_URL: http://timeline-service:${TIMELINE_SERVICE_PORT}
       PRESCRIPTION_SERVICE_URL: http://prescription-service:${PRESCRIPTION_SERVICE_PORT}
       JWT_SECRET: ${JWT_SECRET}
@@ -163,7 +138,6 @@ services:
     depends_on:
       - auth-service
       - patient-service
-      - doctor-service
       - timeline-service
       - prescription-service
     networks:

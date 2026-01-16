@@ -13,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,29 +58,6 @@ services:
       JWT_SECRET: your-secret-key
     ports:
       - "8002:8002"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    links:
-      - postgres
-
-  doctor-service:
-    build:
-      context: .
-      dockerfile: services/doctor/Dockerfile
-    container_name: healthbar-doctor-service
-    network_mode: bridge
-    environment:
-      PORT: 8003
-      DB_HOST: healthbar-postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: healthbar
-      DB_SSLMODE: disable
-      JWT_SECRET: your-secret-key
-    ports:
-      - "8003:8003"
     depends_on:
       postgres:
         condition: service_healthy
@@ -146,7 +123,6 @@ services:
       PORT: 8000
       AUTH_SERVICE_URL: http://healthbar-auth-service:8001
       PATIENT_SERVICE_URL: http://healthbar-patient-service:8002
-      DOCTOR_SERVICE_URL: http://healthbar-doctor-service:8003
       TIMELINE_SERVICE_URL: http://healthbar-timeline-service:8004
       PRESCRIPTION_SERVICE_URL: http://healthbar-prescription-service:8005
     ports:
@@ -154,13 +130,11 @@ services:
     depends_on:
       - auth-service
       - patient-service
-      - doctor-service
       - timeline-service
       - prescription-service
     links:
       - auth-service:healthbar-auth-service
       - patient-service:healthbar-patient-service
-      - doctor-service:healthbar-doctor-service
       - timeline-service:healthbar-timeline-service
       - prescription-service:healthbar-prescription-service
 

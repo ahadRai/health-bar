@@ -12,15 +12,13 @@ var jwtSecret = []byte("your-secret-key-change-in-production") // TODO: Move to 
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
-	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID, email, role string) (string, error) {
+func GenerateToken(userID, email string) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Email:  email,
-		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
