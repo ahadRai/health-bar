@@ -3,3 +3,6 @@
 .DS_Store
 node_modules/
 ../PROJECT_EXPLANATION.md
+../swe.md
+../golang.md
+PROJECT_CHANGES.md
