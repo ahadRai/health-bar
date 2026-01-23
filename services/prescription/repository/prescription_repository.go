@@ -21,13 +21,13 @@ func (r *PrescriptionRepository) CreatePrescription(patientID string, prescripti
 	prescription.PatientID = patientID
 
 	query := `
-        INSERT INTO prescriptions (id, patient_id, file_name, file_type, file_size, file_path, upload_date)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW())
-        RETURNING id, patient_id, file_name, file_type, file_size, file_path, upload_date, created_at
+        INSERT INTO prescriptions (id, patient_id, visit_id, file_name, file_type, file_size, file_path, upload_date)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        RETURNING id, patient_id, visit_id, file_name, file_type, file_size, file_path, upload_date, created_at
     `
 
 	return r.db.QueryRowx(query,
-		prescription.ID, prescription.PatientID, prescription.FileName,
+		prescription.ID, prescription.PatientID, prescription.VisitID, prescription.FileName,
 		prescription.FileType, prescription.FileSize, prescription.FilePath,
 	).StructScan(prescription)
 }
@@ -36,7 +36,7 @@ func (r *PrescriptionRepository) CreatePrescription(patientID string, prescripti
 func (r *PrescriptionRepository) GetPrescriptionByID(prescriptionID string) (*models.Prescription, error) {
 	prescription := &models.Prescription{}
 	query := `
-        SELECT id, patient_id, file_name, file_type, file_size, file_path, upload_date, created_at
+        SELECT id, patient_id, visit_id, file_name, file_type, file_size, file_path, upload_date, created_at
         FROM prescriptions
         WHERE id = $1
     `
@@ -48,7 +48,7 @@ func (r *PrescriptionRepository) GetPrescriptionByID(prescriptionID string) (*mo
 func (r *PrescriptionRepository) GetPrescriptionsByPatientID(patientID string) ([]models.Prescription, error) {
 	var prescriptions []models.Prescription
 	query := `
-        SELECT id, patient_id, file_name, file_type, file_size, file_path, upload_date, created_at
+        SELECT id, patient_id, visit_id, file_name, file_type, file_size, file_path, upload_date, created_at
         FROM prescriptions
         WHERE patient_id = $1
         ORDER BY upload_date DESC

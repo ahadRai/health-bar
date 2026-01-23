@@ -5,6 +5,7 @@ import "time"
 type Prescription struct {
 	ID         string    `json:"id" db:"id"`
 	PatientID  string    `json:"patient_id" db:"patient_id"`
+	VisitID    *string   `json:"visit_id" db:"visit_id"`
 	FileName   string    `json:"file_name" db:"file_name"`
 	FileType   string    `json:"file_type" db:"file_type"`
 	FileSize   int64     `json:"file_size" db:"file_size"`

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FaUserCircle, FaQrcode, FaShareAlt, FaEdit, FaSignOutAlt } from 'react-icons/fa';
+import { FaUserCircle, FaQrcode, FaShareAlt, FaEdit, FaSignOutAlt, FaCalendarPlus, FaFileMedical, FaNotesMedical, FaHospital, FaChevronDown, FaChevronUp, FaDownload } from 'react-icons/fa';
 import api from '../services/api';
 
 const Profile = () => {
@@ -20,8 +20,22 @@ const Profile = () => {
         address: ''
     });
 
+    const [visits, setVisits] = useState([]);
+    const [prescriptions, setPrescriptions] = useState([]);
+    const [showAddVisit, setShowAddVisit] = useState(false);
+    const [newVisit, setNewVisit] = useState({
+        hospital_name: '',
+        visit_date: new Date().toISOString().split('T')[0],
+        reason: '',
+        notes: ''
+    });
+    const [visitFile, setVisitFile] = useState(null);
+    const [isSubmittingVisit, setIsSubmittingVisit] = useState(false);
+
     useEffect(() => {
         fetchProfile();
+        fetchTimeline();
+        fetchPrescriptions();
     }, []);
 
     const fetchProfile = async () => {
@@ -56,6 +70,24 @@ const Profile = () => {
         }
     };
 
+    const fetchTimeline = async () => {
+        try {
+            const response = await api.get('/timeline/my');
+            setVisits(response.data.data || []);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to fetch timeline');
+        }
+    };
+
+    const fetchPrescriptions = async () => {
+        try {
+            const response = await api.get('/prescriptions/my');
+            setPrescriptions(response.data.data || []);
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to fetch prescriptions');
+        }
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         try {
@@ -71,6 +103,61 @@ const Profile = () => {
         }
     };
 
+    const handleAddVisit = async (e) => {
+        e.preventDefault();
+        setError(''); // Clear previous errors
+        setIsSubmittingVisit(true);
+        try {
+            const visitResponse = await api.post('/timeline/visits', newVisit);
+
+            if (visitResponse.data && visitResponse.data.data && visitResponse.data.data.id) {
+                const visitId = visitResponse.data.data.id;
+
+                if (visitFile) {
+                    const formData = new FormData();
+                    formData.append('file', visitFile);
+                    formData.append('visit_id', visitId);
+                    await api.post('/prescriptions/upload', formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                }
+
+                setShowAddVisit(false);
+                setNewVisit({
+                    hospital_name: '',
+                    visit_date: new Date().toISOString().split('T')[0],
+                    reason: '',
+                    notes: ''
+                });
+                setVisitFile(null);
+                fetchTimeline();
+                fetchPrescriptions();
+            } else {
+                throw new Error('Invalid response from server');
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || err.message || 'Failed to add visit');
+        } finally {
+            setIsSubmittingVisit(false);
+        }
+    };
+
+    const downloadPrescription = async (id, fileName) => {
+        try {
+            const response = await api.get(`/prescriptions/download?id=${id}`, {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            setError('Failed to download prescription');
+        }
+    };
     const generateShareLink = async () => {
         try {
             const response = await api.post('/patients/share');
@@ -145,7 +232,7 @@ const Profile = () => {
                             </div>
 
                             {/* Share Section */}
-                            <div className="card" style={{ background: '#ECFDF5', borderColor: '#D1FAE5' }}>
+                            <div className="card" style={{ background: '#ECFDF5', borderColor: '#D1FAE5', marginBottom: '2rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                                     <div style={{ background: 'var(--white)', padding: '0.75rem', borderRadius: '50%' }}>
                                         <FaShareAlt size={24} color="var(--primary)" />
@@ -191,8 +278,131 @@ const Profile = () => {
                                     </motion.div>
                                 )}
                             </div>
+
+                            {/* Timeline Section */}
+                            <div style={{ marginBottom: '2rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <FaCalendarPlus color="var(--primary)" /> Health Timeline
+                                    </h3>
+                                    <button onClick={() => { setError(''); setShowAddVisit(true); }} className="btn btn-primary" style={{ fontSize: '0.875rem' }}>
+                                        + Add Visit
+                                    </button>
+                                </div>
+
+                                {visits.length === 0 ? (
+                                    <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                                        <FaHospital size={40} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                                        <p>No hospital visits recorded yet.</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        {visits.map((visit) => (
+                                            <VisitCard
+                                                key={visit.id}
+                                                visit={visit}
+                                                prescriptions={prescriptions.filter(p => p.visit_id === visit.id)}
+                                                onDownload={downloadPrescription}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
+
+                    {/* Add Visit Modal */}
+                    <AnimatePresence>
+                        {showAddVisit && (
+                            <div className="modal-overlay" style={{
+                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', zIndex: 1000, padding: '1rem'
+                            }}>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="card"
+                                    style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}
+                                >
+                                    <h2 className="title" style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Add Hospital Visit</h2>
+                                    {error && <div className="error-msg" style={{ marginBottom: '1.5rem' }}>{error}</div>}
+                                    <form onSubmit={handleAddVisit}>
+                                        <div className="input-group">
+                                            <label className="input-label">Hospital Name</label>
+                                            <input
+                                                className="input-field"
+                                                required
+                                                value={newVisit.hospital_name}
+                                                onChange={(e) => setNewVisit({ ...newVisit, hospital_name: e.target.value })}
+                                                placeholder="e.g. City General Hospital"
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label className="input-label">Visit Date</label>
+                                            <input
+                                                type="date"
+                                                className="input-field"
+                                                required
+                                                value={newVisit.visit_date}
+                                                onChange={(e) => setNewVisit({ ...newVisit, visit_date: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label className="input-label">Reason for Visit</label>
+                                            <input
+                                                className="input-field"
+                                                required
+                                                value={newVisit.reason}
+                                                onChange={(e) => setNewVisit({ ...newVisit, reason: e.target.value })}
+                                                placeholder="e.g. Regular Checkup, Fever, etc."
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label className="input-label">Notes (Optional)</label>
+                                            <textarea
+                                                className="input-field"
+                                                rows="3"
+                                                value={newVisit.notes}
+                                                onChange={(e) => setNewVisit({ ...newVisit, notes: e.target.value })}
+                                                placeholder="Any additional details..."
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label className="input-label">Attach Prescription (Optional)</label>
+                                            <input
+                                                type="file"
+                                                className="input-field"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => setVisitFile(e.target.files[0])}
+                                            />
+                                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                                Accepted formats: PDF, JPG, PNG (Max 10MB)
+                                            </p>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddVisit(false)}
+                                                className="btn btn-outline"
+                                                disabled={isSubmittingVisit}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="btn btn-primary"
+                                                disabled={isSubmittingVisit}
+                                            >
+                                                {isSubmittingVisit ? 'Adding...' : 'Add Visit'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
 
                     {profile && isEditing && (
                         <div className="card" style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -207,6 +417,105 @@ const Profile = () => {
                     )}
                 </motion.div>
             </main>
+        </div>
+    );
+};
+
+const VisitCard = ({ visit, prescriptions, onDownload }) => {
+    const [expanded, setExpanded] = useState(false);
+
+    return (
+        <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+            <div
+                onClick={() => setExpanded(!expanded)}
+                style={{
+                    padding: '1.25rem', cursor: 'pointer', display: 'flex',
+                    justifyContent: 'space-between', alignItems: 'center',
+                    background: expanded ? 'rgba(16, 185, 129, 0.05)' : 'transparent'
+                }}
+            >
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{
+                        background: 'var(--primary-light)', color: 'var(--primary)',
+                        padding: '0.75rem', borderRadius: '0.75rem', display: 'flex', alignItems: 'center'
+                    }}>
+                        <FaHospital size={20} />
+                    </div>
+                    <div>
+                        <h4 style={{ fontWeight: 600, fontSize: '1rem' }}>{visit.hospital_name}</h4>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                            {new Date(visit.visit_date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span style={{
+                        fontSize: '0.75rem', background: 'var(--bg-light)',
+                        padding: '0.25rem 0.75rem', borderRadius: '1rem', fontWeight: 500
+                    }}>
+                        {visit.reason}
+                    </span>
+                    {expanded ? <FaChevronUp color="var(--text-muted)" /> : <FaChevronDown color="var(--text-muted)" />}
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {expanded && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        style={{ borderTop: '1px solid var(--border)', overflow: 'hidden' }}
+                    >
+                        <div style={{ padding: '1.25rem' }}>
+                            {visit.notes && (
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <h5 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <FaNotesMedical /> Notes
+                                    </h5>
+                                    <p style={{ fontSize: '0.925rem', lineHeight: 1.5 }}>{visit.notes}</p>
+                                </div>
+                            )}
+
+                            <div>
+                                <h5 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <FaFileMedical /> Prescriptions
+                                </h5>
+                                {prescriptions.length === 0 ? (
+                                    <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>No prescriptions attached.</p>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {prescriptions.map((p) => (
+                                            <div key={p.id} style={{
+                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                background: 'var(--bg-light)', padding: '0.75rem 1rem', borderRadius: 'var(--radius)'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <FaFileMedical color="var(--primary)" />
+                                                    <div>
+                                                        <p style={{ fontSize: '0.875rem', fontWeight: 500 }}>{p.file_name}</p>
+                                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                                            {(p.file_size / 1024).toFixed(1)} KB • {new Date(p.upload_date).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onDownload(p.id, p.file_name); }}
+                                                    className="btn btn-outline"
+                                                    style={{ padding: '0.4rem', borderRadius: '50%' }}
+                                                    title="Download"
+                                                >
+                                                    <FaDownload size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

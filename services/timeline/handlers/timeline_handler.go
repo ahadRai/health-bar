@@ -35,15 +35,9 @@ type UpdateVisitRequest struct {
 // CreateVisit creates a new hospital visit
 func (h *TimelineHandler) CreateVisit(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("X-User-ID")
-	userRole := r.Header.Get("X-User-Role")
 
 	if userID == "" {
 		utils.SendError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	if userRole != "patient" {
-		utils.SendError(w, http.StatusForbidden, "Only patients can add hospital visits")
 		return
 	}
 
@@ -91,15 +85,9 @@ func (h *TimelineHandler) CreateVisit(w http.ResponseWriter, r *http.Request) {
 // GetMyTimeline gets all hospital visits for the current patient
 func (h *TimelineHandler) GetMyTimeline(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("X-User-ID")
-	userRole := r.Header.Get("X-User-Role")
 
 	if userID == "" {
 		utils.SendError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	if userRole != "patient" {
-		utils.SendError(w, http.StatusForbidden, "Only patients can view their timeline")
 		return
 	}
 

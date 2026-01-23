@@ -97,12 +97,20 @@ func (h *PrescriptionHandler) UploadPrescription(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Get visit_id if present
+	visitID := r.FormValue("visit_id")
+	var visitIDPtr *string
+	if visitID != "" {
+		visitIDPtr = &visitID
+	}
+
 	// Save to database
 	prescription := &models.Prescription{
 		FileName: header.Filename,
 		FileType: fileExt,
 		FileSize: fileSize,
 		FilePath: uniqueFilename, // Store only filename, not full path
+		VisitID:  visitIDPtr,
 	}
 
 	if err := h.repo.CreatePrescription(patientProfileID, prescription); err != nil {
@@ -118,15 +126,9 @@ func (h *PrescriptionHandler) UploadPrescription(w http.ResponseWriter, r *http.
 // GetMyPrescriptions gets all prescriptions for the current patient
 func (h *PrescriptionHandler) GetMyPrescriptions(w http.ResponseWriter, r *http.Request) {
 	userID := r.Header.Get("X-User-ID")
-	userRole := r.Header.Get("X-User-Role")
 
 	if userID == "" {
 		utils.SendError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	if userRole != "patient" {
-		utils.SendError(w, http.StatusForbidden, "Only patients can view their prescriptions")
 		return
 	}
 
